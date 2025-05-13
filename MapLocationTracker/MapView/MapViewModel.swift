@@ -17,7 +17,7 @@ class MapViewModel {
         self.locationManager = locationManager
         locationManager.setStatusListener { [weak self] status in
             self?.permissionStatusDidUpdate?(status)
-            print("🟢 Status değişti: \(status)")
+            print("🟢 Status has changed: \(status)")
         }
     }
 

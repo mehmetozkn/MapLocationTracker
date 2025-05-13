@@ -46,7 +46,7 @@ class LocationManager: NSObject, LocationServiceProtocol {
         guard let location = locations.last else { return }
         let userLocation = UserLocation(latitude: location.coordinate.latitude,
                                         longitude: location.coordinate.longitude)
-        print("📍 Konum güncellendi: \(location.coordinate.latitude), \(location.coordinate.longitude)")
+        print("📍 Location updated: \(location.coordinate.latitude), \(location.coordinate.longitude)")
         
         NotificationCenter.default.post(name: .didUpdateUserLocation, object: userLocation)
     }
