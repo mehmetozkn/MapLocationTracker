@@ -9,8 +9,8 @@ import CoreLocation
 import Foundation
 import MapKit
 
-class MapViewModel {
-    let locationManager: LocationServiceProtocol
+final class MapViewModel {
+    private let locationManager: LocationServiceProtocol
     var permissionStatusDidUpdate: ((PermissionStatus) -> Void)?
     var destinationPin: MKPointAnnotation?
     var userMarkers: [MKPointAnnotation] = []
@@ -18,9 +18,12 @@ class MapViewModel {
 
     init(locationManager: LocationServiceProtocol = LocationManager()) {
         self.locationManager = locationManager
+        setupLocationManager()
+    }
+
+    private func setupLocationManager() {
         locationManager.setStatusListener { [weak self] status in
-            guard let self = self else { return }
-            permissionStatusDidUpdate?(status)
+            self?.permissionStatusDidUpdate?(status)
             print("🟢 Status has changed: \(status)")
         }
     }
