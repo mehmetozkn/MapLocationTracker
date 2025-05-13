@@ -12,6 +12,8 @@ import MapKit
 class MapViewModel {
     let locationManager: LocationServiceProtocol
     var permissionStatusDidUpdate: ((PermissionStatus) -> Void)?
+    var destinationPin: MKPointAnnotation?
+    var userMarkers: [MKPointAnnotation] = []
 
     init(locationManager: LocationServiceProtocol = LocationManager()) {
         self.locationManager = locationManager

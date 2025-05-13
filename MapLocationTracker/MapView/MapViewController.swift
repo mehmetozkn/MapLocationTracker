@@ -10,12 +10,14 @@ import UIKit
 
 class MapViewController: UIViewController {
     private var viewModel = MapViewModel()
+
     @IBOutlet weak var mapView: MKMapView! {
         didSet {
             let longPressGesture = UILongPressGestureRecognizer(target: self, action: #selector(handleLongPress(_:)))
             mapView.addGestureRecognizer(longPressGesture)
         }
     }
+    
     @IBOutlet weak var locationPermission: UIButton! {
         didSet {
             locationPermission.addTarget(
@@ -28,7 +30,6 @@ class MapViewController: UIViewController {
             resetRoute.addTarget(self, action: #selector(clearRoute), for: .touchUpInside)
         }
     }
-    var destinationPin: MKPointAnnotation?
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -62,13 +63,22 @@ class MapViewController: UIViewController {
         annotation.coordinate = CLLocationCoordinate2D(
             latitude: userLocation.latitude,
             longitude: userLocation.longitude)
-        mapView.addAnnotation(annotation)
+        
+        viewModel.userMarkers.append(annotation)
+
+        mapView.removeAnnotations(viewModel.userMarkers.filter { $0 != annotation })
+
+        for marker in viewModel.userMarkers {
+            mapView.addAnnotation(marker)
+        }
+
         let region = MKCoordinateRegion(
             center: annotation.coordinate,
             latitudinalMeters: 600,
             longitudinalMeters: 600)
         mapView.setRegion(region, animated: true)
     }
+
     
     private func updatePermissionButton(with status: PermissionStatus) {
         let title =
@@ -109,7 +119,7 @@ class MapViewController: UIViewController {
     }
     
     private func addDestinationPin(at coordinate: CLLocationCoordinate2D) {
-        if let oldPin = destinationPin {
+        if let oldPin = viewModel.destinationPin {
             mapView.removeAnnotation(oldPin)
         }
 
@@ -119,9 +129,8 @@ class MapViewController: UIViewController {
         
         mapView.addAnnotation(annotation)
 
-        destinationPin = annotation
+        viewModel.destinationPin = annotation
     }
-
 }
 
 // MARK: - Objc Selectors
@@ -146,9 +155,9 @@ private extension MapViewController {
     
     @objc func clearRoute() {
         mapView.removeOverlays(mapView.overlays)
-        if let oldPin = destinationPin {
+        if let oldPin = viewModel.destinationPin {
             mapView.removeAnnotation(oldPin)
-            destinationPin = nil
+            viewModel.destinationPin = nil
         }
         UserDefaults.standard.removeObject(forKey: PersistencyKey.savedRouteDestination)
     }
@@ -161,11 +170,10 @@ private extension MapViewController {
             let alert = UIAlertController(title: "Rota", message: "Plot a route to this location?", preferredStyle: .alert)
             alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
             alert.addAction(UIAlertAction(title: "OK", style: .default, handler: { _ in
-                if let userLocation = self.mapView.annotations
-                    .compactMap({ $0 as? MKPointAnnotation })
-                    .first(where: { $0.title == nil }) {
-                    let userLoc = UserLocation(latitude: userLocation.coordinate.latitude,
-                                               longitude: userLocation.coordinate.longitude)
+                if let lastMarker = self.viewModel.userMarkers.last {
+                    let userLoc = UserLocation(
+                        latitude: lastMarker.coordinate.latitude,
+                        longitude: lastMarker.coordinate.longitude)
                     self.saveDestinationAndDrawRoute(from: userLoc, to: coordinate)
                 } else {
                     print("📍 User location not found.")
@@ -206,14 +214,21 @@ extension MapViewController: MKMapViewDelegate {
                 }
 
                 return annotationView
-            }
-            else {
+            } else {
                 let identifier = "UserPin"
                 var annotationView = mapView.dequeueReusableAnnotationView(withIdentifier: identifier)
 
                 if annotationView == nil {
                     annotationView = MKMarkerAnnotationView(annotation: annotation, reuseIdentifier: identifier)
                     annotationView?.canShowCallout = true
+                }
+
+                if let markerView = annotationView as? MKMarkerAnnotationView {
+                    if let last = viewModel.userMarkers.last, last == pointAnnotation {
+                        markerView.markerTintColor = .systemBlue
+                    } else {
+                        markerView.markerTintColor = .systemRed
+                    }
                 }
 
                 return annotationView
