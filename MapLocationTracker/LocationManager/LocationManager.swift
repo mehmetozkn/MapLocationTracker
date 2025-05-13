@@ -96,7 +96,7 @@ class LocationManager: NSObject, LocationServiceProtocol {
     }
 }
 
-struct UserLocation {
+struct UserLocation: Equatable {
     let latitude: Double
     let longitude: Double
 }

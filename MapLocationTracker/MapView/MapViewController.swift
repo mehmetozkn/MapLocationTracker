@@ -34,17 +34,18 @@ class MapViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         mapView.delegate = self
+        mapView.showsUserLocation = true
         viewModel.startTrackingLocation()
         NotificationCenter.default.addObserver(self, selector: #selector(didUpdateUserLocation(_:)), name: .didUpdateUserLocation, object: nil)
         viewModel.permissionStatusDidUpdate = { [weak self] status in
-            self?.updatePermissionButton(with: status)
+            guard let self = self else { return }
+            updatePermissionButton(with: status)
         }
     }
     
     deinit {
         viewModel.stopTrackingLocation()
-        NotificationCenter.default.removeObserver(
-            self, name: .didUpdateUserLocation, object: nil)
+        NotificationCenter.default.removeObserver(self, name: .didUpdateUserLocation, object: nil)
     }
     
     private func saveDestinationAndDrawRoute(from userLocation: UserLocation, to destination: CLLocationCoordinate2D) {
@@ -58,7 +59,8 @@ class MapViewController: UIViewController {
         UserDefaults.standard.setValue(data, forKey: PersistencyKey.savedRouteDestination)
     }
 
-    private func addMarker(at userLocation: UserLocation) {
+    private func addMarker(at userLocation: UserLocation?) {
+        guard let userLocation else { return }
         let annotation = MKPointAnnotation()
         annotation.coordinate = CLLocationCoordinate2D(
             latitude: userLocation.latitude,
@@ -71,18 +73,12 @@ class MapViewController: UIViewController {
         for marker in viewModel.userMarkers {
             mapView.addAnnotation(marker)
         }
-
-        let region = MKCoordinateRegion(
-            center: annotation.coordinate,
-            latitudinalMeters: 600,
-            longitudinalMeters: 600)
-        mapView.setRegion(region, animated: true)
+        zoomMap(annotation: annotation)
     }
 
     
     private func updatePermissionButton(with status: PermissionStatus) {
-        let title =
-            status == .authorized
+        let title = status == .authorized
             ? "Location is on. Click to close."
             : "Location is off. Click to on."
         locationPermission.setTitle(title, for: .normal)
@@ -102,15 +98,15 @@ class MapViewController: UIViewController {
 
         let directions = MKDirections(request: directionRequest)
         directions.calculate { [weak self] response, error in
-            guard let route = response?.routes.first else {
+            guard let route = response?.routes.first, let self = self else {
                 print("The route could not be drawn:", error?.localizedDescription ?? "")
                 return
             }
 
-            self?.mapView.removeOverlays(self?.mapView.overlays ?? [])
-            self?.mapView.addOverlay(route.polyline)
+            self.mapView.removeOverlays(self.mapView.overlays)
+            self.mapView.addOverlay(route.polyline)
 
-            self?.mapView.setVisibleMapRect(
+            self.mapView.setVisibleMapRect(
                 route.polyline.boundingMapRect,
                 edgePadding: UIEdgeInsets(top: 60, left: 60, bottom: 60, right: 60),
                 animated: true
@@ -131,6 +127,14 @@ class MapViewController: UIViewController {
 
         viewModel.destinationPin = annotation
     }
+    
+    private func zoomMap(annotation: MKPointAnnotation) {
+        let region = MKCoordinateRegion(
+            center: annotation.coordinate,
+            latitudinalMeters: 600,
+            longitudinalMeters: 600)
+        mapView.setRegion(region, animated: true)
+    }
 }
 
 // MARK: - Objc Selectors
@@ -140,7 +144,18 @@ private extension MapViewController {
         guard let userLocation = notification.object as? UserLocation else {
             return
         }
-        addMarker(at: userLocation)
+        
+        let annotation = MKPointAnnotation()
+        annotation.coordinate = CLLocationCoordinate2D(latitude: userLocation.latitude,
+                                                        longitude: userLocation.longitude)
+        zoomMap(annotation: annotation)
+        
+        if let locationMarker = viewModel.currentUserLocation {
+            addMarker(at: locationMarker)
+        }
+        
+        viewModel.currentUserLocation = userLocation
+        
         if let saved = UserDefaults.standard.dictionary(forKey: PersistencyKey.savedRouteDestination) as? [String: Double],
            let lat = saved["lat"], let lng = saved["lng"] {
             let destinationCoordinate = CLLocationCoordinate2D(latitude: lat, longitude: lng)
@@ -167,14 +182,15 @@ private extension MapViewController {
             let locationInView = gestureRecognizer.location(in: mapView)
             let coordinate = mapView.convert(locationInView, toCoordinateFrom: mapView)
 
-            let alert = UIAlertController(title: "Rota", message: "Plot a route to this location?", preferredStyle: .alert)
+            let alert = UIAlertController(title: "Route", message: "Plot a route to this location?", preferredStyle: .alert)
             alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
-            alert.addAction(UIAlertAction(title: "OK", style: .default, handler: { _ in
-                if let lastMarker = self.viewModel.userMarkers.last {
+            alert.addAction(UIAlertAction(title: "OK", style: .default, handler: { [weak self] _ in
+                guard let self = self else { return }
+                if let lastMarker = viewModel.currentUserLocation {
                     let userLoc = UserLocation(
-                        latitude: lastMarker.coordinate.latitude,
-                        longitude: lastMarker.coordinate.longitude)
-                    self.saveDestinationAndDrawRoute(from: userLoc, to: coordinate)
+                        latitude: lastMarker.latitude,
+                        longitude: lastMarker.longitude)
+                    saveDestinationAndDrawRoute(from: userLoc, to: coordinate)
                 } else {
                     print("📍 User location not found.")
                 }
@@ -198,42 +214,37 @@ extension MapViewController: MKMapViewDelegate {
     }
     
     func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
+        if annotation is MKUserLocation {
+            return nil
+        }
+
         if let pointAnnotation = annotation as? MKPointAnnotation {
             if pointAnnotation.title == "Destination" {
                 let identifier = "GreenPin"
                 var annotationView = mapView.dequeueReusableAnnotationView(withIdentifier: identifier)
-
                 if annotationView == nil {
                     annotationView = MKMarkerAnnotationView(annotation: annotation, reuseIdentifier: identifier)
                     annotationView?.canShowCallout = true
                 }
-
                 if let markerView = annotationView as? MKMarkerAnnotationView {
                     markerView.markerTintColor = .green
                     markerView.glyphImage = UIImage(systemName: "mappin.and.ellipse")
                 }
-
                 return annotationView
             } else {
                 let identifier = "UserPin"
                 var annotationView = mapView.dequeueReusableAnnotationView(withIdentifier: identifier)
-
                 if annotationView == nil {
                     annotationView = MKMarkerAnnotationView(annotation: annotation, reuseIdentifier: identifier)
                     annotationView?.canShowCallout = true
                 }
-
                 if let markerView = annotationView as? MKMarkerAnnotationView {
-                    if let last = viewModel.userMarkers.last, last == pointAnnotation {
-                        markerView.markerTintColor = .systemBlue
-                    } else {
-                        markerView.markerTintColor = .systemRed
-                    }
+                    markerView.markerTintColor = .red
                 }
-
                 return annotationView
             }
         }
+
         return nil
     }
 

@@ -14,11 +14,13 @@ class MapViewModel {
     var permissionStatusDidUpdate: ((PermissionStatus) -> Void)?
     var destinationPin: MKPointAnnotation?
     var userMarkers: [MKPointAnnotation] = []
+    var currentUserLocation: UserLocation?
 
     init(locationManager: LocationServiceProtocol = LocationManager()) {
         self.locationManager = locationManager
         locationManager.setStatusListener { [weak self] status in
-            self?.permissionStatusDidUpdate?(status)
+            guard let self = self else { return }
+            permissionStatusDidUpdate?(status)
             print("🟢 Status has changed: \(status)")
         }
     }
