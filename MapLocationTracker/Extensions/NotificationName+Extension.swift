@@ -8,7 +8,6 @@
 import Foundation
 
 extension Notification.Name {
-    static let newMarkerCoordinate = Notification.Name("newMarkerCoordinate")
+    static let didUpdateUserLocation = Notification.Name("didUpdateUserLocation")
 }
-
 

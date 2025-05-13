@@ -5,26 +5,31 @@
 //  Created by Mehmet Özkan on 12.05.2025.
 //
 
-import Foundation
 import CoreLocation
+import Foundation
 import MapKit
 
 class MapViewModel {
-    var locationManager: LocationManager
-    var didUpdateLocation: ((UserLocation) -> Void)?
+    let locationManager: LocationServiceProtocol
+    var permissionStatusDidUpdate: ((PermissionStatus) -> Void)?
 
-    init() {
-        self.locationManager = LocationManager()
+    init(locationManager: LocationServiceProtocol = LocationManager()) {
+        self.locationManager = locationManager
+        locationManager.setStatusListener { [weak self] status in
+            self?.permissionStatusDidUpdate?(status)
+            print("🟢 Status değişti: \(status)")
+        }
     }
 
     func startTrackingLocation() {
-        locationManager.start { [weak self] userLocation in
-            self?.didUpdateLocation?(userLocation)
-        }
+        locationManager.start(desiredAccuracy: kCLLocationAccuracyBest)
     }
 
     func stopTrackingLocation() {
         locationManager.stop()
     }
-}
 
+    func toggleLocationPermission() {
+        locationManager.toggleLocationPermission()
+    }
+}

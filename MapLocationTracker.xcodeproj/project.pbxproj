@@ -293,8 +293,9 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = MapLocationTracker/Info.plist;
 				INFOPLIST_KEY_LSApplicationCategoryType = NSLocationAlwaysUsageDescription;
-				INFOPLIST_KEY_NSLocationAlwaysUsageDescription = "Her zaman konum bilgilerinize erişmemiz gerektiğinde, harita üzerinde gezintinizi takip ediyoruz.";
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Harita üzerinde bulunduğunuz konumu gösterebilmek için konum bilgilerinize erişiyoruz";
+				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "Uygulama konumunuzu her zaman kullanmak istiyor";
+				INFOPLIST_KEY_NSLocationAlwaysUsageDescription = "Uygulama sürekli konumunuzu kullanmak istiyor";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Uygulama konumunuzu kullanmak istiyor";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UIMainStoryboardFile = Main;
@@ -324,8 +325,9 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = MapLocationTracker/Info.plist;
 				INFOPLIST_KEY_LSApplicationCategoryType = NSLocationAlwaysUsageDescription;
-				INFOPLIST_KEY_NSLocationAlwaysUsageDescription = "Her zaman konum bilgilerinize erişmemiz gerektiğinde, harita üzerinde gezintinizi takip ediyoruz.";
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Harita üzerinde bulunduğunuz konumu gösterebilmek için konum bilgilerinize erişiyoruz";
+				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "Uygulama konumunuzu her zaman kullanmak istiyor";
+				INFOPLIST_KEY_NSLocationAlwaysUsageDescription = "Uygulama sürekli konumunuzu kullanmak istiyor";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Uygulama konumunuzu kullanmak istiyor";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UIMainStoryboardFile = Main;
