@@ -13,7 +13,6 @@ final class MapViewModel {
     private let locationManager: LocationServiceProtocol
     var permissionStatus = Observable<PermissionStatus>(.notDetermined)
     var destinationPin: MKPointAnnotation?
-    var userMarkers: [MKPointAnnotation] = []
     var currentUserLocation: UserLocation?
 
     init(locationManager: LocationServiceProtocol = LocationManager()) {

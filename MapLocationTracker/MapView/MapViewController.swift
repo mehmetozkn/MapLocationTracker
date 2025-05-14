@@ -149,22 +149,14 @@ extension MapViewController {
             latitude: userLocation.latitude,
             longitude: userLocation.longitude)
 
-        viewModel.userMarkers.append(annotation)
-
-        mapView.removeAnnotations(
-            viewModel.userMarkers.filter { $0 != annotation })
-
-        for marker in viewModel.userMarkers {
-            mapView.addAnnotation(marker)
-        }
-        zoomMap(annotation: annotation)
+        mapView.addAnnotation(annotation)
     }
 
     private func zoomMap(annotation: MKPointAnnotation) {
         let region = MKCoordinateRegion(
             center: annotation.coordinate,
-            latitudinalMeters: 600,
-            longitudinalMeters: 600)
+            latitudinalMeters: 900,
+            longitudinalMeters: 900)
         mapView.setRegion(region, animated: true)
     }
 
