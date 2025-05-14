@@ -11,19 +11,19 @@ import MapKit
 
 final class MapViewModel {
     private let locationManager: LocationServiceProtocol
-    var permissionStatusDidUpdate: ((PermissionStatus) -> Void)?
+    var permissionStatus = Observable<PermissionStatus>(.notDetermined)
     var destinationPin: MKPointAnnotation?
     var userMarkers: [MKPointAnnotation] = []
     var currentUserLocation: UserLocation?
 
     init(locationManager: LocationServiceProtocol = LocationManager()) {
         self.locationManager = locationManager
-        setupLocationManager()
+        setupLocationObserver()
     }
 
-    private func setupLocationManager() {
+    private func setupLocationObserver() {
         locationManager.setStatusListener { [weak self] status in
-            self?.permissionStatusDidUpdate?(status)
+            self?.permissionStatus.value = status
             print("🟢 Status has changed: \(status)")
         }
     }

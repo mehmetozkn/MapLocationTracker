@@ -13,24 +13,20 @@ final class MapViewController: UIViewController {
 
     @IBOutlet weak var mapView: MKMapView! {
         didSet {
-            let longPressGesture = UILongPressGestureRecognizer(
-                target: self, action: #selector(handleLongPress(_:)))
+            let longPressGesture = UILongPressGestureRecognizer(target: self, action: #selector(handleLongPress(_:)))
             mapView.addGestureRecognizer(longPressGesture)
         }
     }
 
     @IBOutlet weak var locationPermission: UIButton! {
         didSet {
-            locationPermission.addTarget(
-                self, action: #selector(toggleLocationPermission),
-                for: .touchUpInside)
+            locationPermission.addTarget(self, action: #selector(toggleLocationPermission),for: .touchUpInside)
         }
     }
 
     @IBOutlet weak var resetRoute: UIButton! {
         didSet {
-            resetRoute.addTarget(
-                self, action: #selector(clearRoute), for: .touchUpInside)
+            resetRoute.addTarget(self, action: #selector(clearRoute), for: .touchUpInside)
         }
     }
 
@@ -49,7 +45,8 @@ final class MapViewController: UIViewController {
         NotificationCenter.default.addObserver(
             self, selector: #selector(didUpdateUserLocation(_:)),
             name: .didUpdateUserLocation, object: nil)
-        viewModel.permissionStatusDidUpdate = { [weak self] status in
+
+        viewModel.permissionStatus.bind { [weak self] status in
             self?.updatePermissionButton(with: status)
         }
     }
