@@ -169,7 +169,7 @@ extension MapViewController {
     }
 }
 
-// MARK: - Objc Selectors
+// MARK: - Objc Methods
 
 extension MapViewController {
     @objc func didUpdateUserLocation(_ notification: Notification) {
