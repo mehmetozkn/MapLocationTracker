@@ -14,14 +14,11 @@ protocol LocationServiceProtocol: CLLocationManagerDelegate {
 
     func start(desiredAccuracy: CLLocationAccuracy)
     func stop()
-    func toggleLocationPermission()
-    func setStatusListener(listener: @escaping (PermissionStatus) -> Void)
+    func changeLocationPermission()
 }
 
 final class LocationManager: NSObject, LocationServiceProtocol {
     private let locationManager = CLLocationManager()
-    private var statusListener: ((PermissionStatus) -> Void)?
-
     var currentStatus: PermissionStatus = .denied
 
     override init() {
@@ -52,8 +49,7 @@ final class LocationManager: NSObject, LocationServiceProtocol {
             longitude: location.coordinate.longitude)
         print("📍 Location updated: \(location.coordinate.latitude), \(location.coordinate.longitude)")
 
-        NotificationCenter.default.post(
-            name: .didUpdateUserLocation, object: userLocation)
+        NotificationCenter.default.post(name: .userLocation, object: userLocation)
     }
 
     private func requestLocationPermission() {
@@ -62,10 +58,6 @@ final class LocationManager: NSObject, LocationServiceProtocol {
 
     deinit {
         stop()
-    }
-
-    func setStatusListener(listener: @escaping (PermissionStatus) -> Void) {
-        self.statusListener = listener
     }
 
     func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
@@ -80,11 +72,11 @@ final class LocationManager: NSObject, LocationServiceProtocol {
         default:
             self.currentStatus = .denied
         }
-
-        statusListener?(currentStatus)
+        
+        NotificationCenter.default.post(name: .locationStatus, object: currentStatus)
     }
 
-    func toggleLocationPermission() {
+    func changeLocationPermission() {
         switch currentStatus {
         case .notDetermined:
             requestLocationPermission()
@@ -100,11 +92,6 @@ final class LocationManager: NSObject, LocationServiceProtocol {
             UIApplication.shared.open(settingsURL)
         }
     }
-}
-
-struct UserLocation: Equatable {
-    let latitude: Double
-    let longitude: Double
 }
 
 enum PermissionStatus {

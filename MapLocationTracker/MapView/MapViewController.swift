@@ -13,20 +13,24 @@ final class MapViewController: UIViewController {
 
     @IBOutlet weak var mapView: MKMapView! {
         didSet {
-            let longPressGesture = UILongPressGestureRecognizer(target: self, action: #selector(handleLongPress(_:)))
+            let longPressGesture = UILongPressGestureRecognizer(
+                target: self, action: #selector(handleLongPress(_:)))
             mapView.addGestureRecognizer(longPressGesture)
         }
     }
 
     @IBOutlet weak var locationPermission: UIButton! {
         didSet {
-            locationPermission.addTarget(self, action: #selector(toggleLocationPermission),for: .touchUpInside)
+            locationPermission.addTarget(
+                self, action: #selector(toggleLocationPermission),
+                for: .touchUpInside)
         }
     }
 
     @IBOutlet weak var resetRoute: UIButton! {
         didSet {
-            resetRoute.addTarget(self, action: #selector(clearRoute), for: .touchUpInside)
+            resetRoute.addTarget(
+                self, action: #selector(clearRoute), for: .touchUpInside)
         }
     }
 
@@ -43,43 +47,36 @@ final class MapViewController: UIViewController {
 
     private func setupNotifications() {
         NotificationCenter.default.addObserver(
-            self, selector: #selector(didUpdateUserLocation(_:)),
-            name: .didUpdateUserLocation, object: nil)
+            self,
+            selector: #selector(didUpdateUserLocation(_:)),
+            name: .userLocation,
+            object: nil)
 
-        viewModel.permissionStatus.bind { [weak self] status in
-            self?.updatePermissionButton(with: status)
-        }
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(didUpdateLocationStatus(_:)),
+            name: .locationStatus,
+            object: nil)
     }
 
     private func cleanUp() {
         viewModel.stopTrackingLocation()
         NotificationCenter.default.removeObserver(
-            self, name: .didUpdateUserLocation, object: nil)
+            self, name: .userLocation, object: nil)
+        NotificationCenter.default.removeObserver(
+            self, name: .locationStatus, object: nil)
     }
 
     private func setupUI() {
         mapView.delegate = self
         mapView.showsUserLocation = true
     }
-
-    private func updatePermissionButton(with status: PermissionStatus) {
-        let title =
-            status == .authorized
-            ? "Location is on. Click to close."
-            : "Location is off. Click to on."
-        locationPermission.setTitle(title, for: .normal)
-        let titleColor: UIColor =
-            status == .authorized ? .systemGreen : .systemRed
-        locationPermission.setTitleColor(titleColor, for: .normal)
-    }
 }
 
 // MARK: - Map Operations
 
 extension MapViewController {
-    private func saveDestinationAndDrawRoute(
-        from userLocation: UserLocation, to destination: CLLocationCoordinate2D
-    ) {
+    private func saveDestinationAndDrawRoute(from userLocation: UserLocation, to destination: CLLocationCoordinate2D) {
         let fromCoordinate = CLLocationCoordinate2D(
             latitude: userLocation.latitude,
             longitude: userLocation.longitude)
@@ -94,10 +91,7 @@ extension MapViewController {
             data, forKey: PersistencyKey.savedRouteDestination)
     }
 
-    private func drawRoute(
-        from source: CLLocationCoordinate2D,
-        to destination: CLLocationCoordinate2D
-    ) {
+    private func drawRoute(from source: CLLocationCoordinate2D, to destination: CLLocationCoordinate2D) {
         let sourcePlacemark = MKPlacemark(coordinate: source)
         let destinationPlacemark = MKPlacemark(coordinate: destination)
 
@@ -181,6 +175,7 @@ extension MapViewController {
         annotation.coordinate = CLLocationCoordinate2D(
             latitude: userLocation.latitude,
             longitude: userLocation.longitude)
+
         zoomMap(annotation: annotation)
 
         if let locationMarker = viewModel.currentUserLocation {
@@ -199,6 +194,20 @@ extension MapViewController {
             saveDestinationAndDrawRoute(
                 from: userLocation, to: destinationCoordinate)
         }
+    }
+
+    @objc func didUpdateLocationStatus(_ notification: Notification) {
+        guard let status = notification.object as? PermissionStatus else {
+            return
+        }
+        let title =
+            status == .authorized
+            ? "Location is on. Click to close."
+            : "Location is off. Click to on."
+        locationPermission.setTitle(title, for: .normal)
+        let titleColor: UIColor =
+            status == .authorized ? .systemGreen : .systemRed
+        locationPermission.setTitleColor(titleColor, for: .normal)
     }
 
     @objc func toggleLocationPermission() {

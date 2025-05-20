@@ -8,6 +8,7 @@
 import Foundation
 
 extension Notification.Name {
-    static let didUpdateUserLocation = Notification.Name("didUpdateUserLocation")
+    static let userLocation = Notification.Name("userLocation")
+    static let locationStatus = Notification.Name("locationStatus")
 }
 
