@@ -162,13 +162,9 @@ extension MapViewController {
         guard let status = notification.object as? PermissionStatus else {
             return
         }
-        let title =
-            status == .authorized
-            ? "Location is on. Click to close."
-            : "Location is off. Click to on."
+        let title = status == .authorized ? "Location is on. Click to close." : "Location is off. Click to on."
         locationPermission.setTitle(title, for: .normal)
-        let titleColor: UIColor =
-            status == .authorized ? .systemGreen : .systemRed
+        let titleColor: UIColor = status == .authorized ? .systemGreen : .systemRed
         locationPermission.setTitleColor(titleColor, for: .normal)
     }
 
@@ -178,39 +174,33 @@ extension MapViewController {
 
     @objc func clearRoute() {
         mapView.removeOverlays(mapView.overlays)
+        
         if let oldPin = viewModel.destinationPin {
             mapView.removeAnnotation(oldPin)
-            viewModel.destinationPin = nil
         }
-        
-        AppStorageManager.shared.remove(forKey: PersistencyKey.savedRoute)
+        viewModel.clearSavedRoute()
     }
 
     @objc func handleLongPress(_ gestureRecognizer: UILongPressGestureRecognizer) {
         if gestureRecognizer.state == .began {
             let locationInView = gestureRecognizer.location(in: mapView)
-            let coordinate = mapView.convert(
-                locationInView, toCoordinateFrom: mapView)
+            let coordinate = mapView.convert(locationInView, toCoordinateFrom: mapView)
 
-            let alert = UIAlertController(
-                title: "Route", message: "Plot a route to this location?",
-                preferredStyle: .alert)
+            let alert = UIAlertController(title: "Route", message: "Plot a route to this location?", preferredStyle: .alert)
             alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
-            alert.addAction(
-                UIAlertAction(
-                    title: "OK", style: .default,
-                    handler: { [weak self] _ in
-                        guard let self = self else { return }
-                        if let lastMarker = viewModel.currentUserLocation {
-                            let userLoc = UserLocation(
-                                latitude: lastMarker.latitude,
-                                longitude: lastMarker.longitude)
-                            saveDestinationAndDrawRoute(
-                                from: userLoc, to: coordinate)
-                        } else {
-                            print("📍 User location not found.")
+            alert.addAction(UIAlertAction(title: "OK", style: .default, handler: { [weak self] _ in
+                guard let self = self, let userLoc = self.viewModel.currentUserLocation else { return }
+                self.viewModel.showNewRoute(at: coordinate, userLocation: userLoc) { route in
+                    DispatchQueue.main.async {
+                        if let route = route {
+                            self.mapView.removeOverlays(self.mapView.overlays)
+                            self.mapView.addOverlay(route.polyline)
+                            self.mapView.setVisibleMapRect(route.polyline.boundingMapRect, edgePadding: UIEdgeInsets(top: 60, left: 60, bottom: 60, right: 60), animated: true)
                         }
-                    }))
+                        self.addDestinationPin(at: coordinate)
+                    }
+                }
+            }))
             present(alert, animated: true)
         }
     }

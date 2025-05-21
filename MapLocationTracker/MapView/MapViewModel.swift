@@ -13,7 +13,7 @@ final class MapViewModel {
     private let locationManager: LocationServiceProtocol
     var destinationPin: MKPointAnnotation?
     var currentUserLocation: UserLocation?
-
+    
     init(locationManager: LocationServiceProtocol = LocationManager()) {
         self.locationManager = locationManager
     }
@@ -64,5 +64,20 @@ final class MapViewModel {
             return nil
         }
         return CLLocationCoordinate2D(latitude: lat, longitude: lng)
+    }
+    
+    func showNewRoute(at coordinate: CLLocationCoordinate2D, userLocation: UserLocation?, completion: @escaping (MKRoute?) -> Void) {
+        guard let userLoc = userLocation else { return }
+        calculateRoute(from: CLLocationCoordinate2D(latitude: userLoc.latitude, longitude: userLoc.longitude), to: coordinate) { route in
+            if route != nil {
+                self.saveRoute(coordinate)
+            }
+            completion(route)
+        }
+    }
+    
+    func clearSavedRoute() {
+        AppStorageManager.shared.remove(forKey: PersistencyKey.savedRoute)
+        destinationPin = nil
     }
 }
