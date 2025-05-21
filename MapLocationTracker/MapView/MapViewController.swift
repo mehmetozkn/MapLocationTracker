@@ -1,5 +1,5 @@
 //
-//  ViewController.swift
+//  MapViewController.swift
 //  MapLocationTracker
 //
 //  Created by Mehmet Özkan on 12.05.2025.
@@ -22,7 +22,7 @@ final class MapViewController: UIViewController {
     @IBOutlet weak var locationPermission: UIButton! {
         didSet {
             locationPermission.addTarget(
-                self, action: #selector(toggleLocationPermission),
+                self, action: #selector(changeLocationPermission),
                 for: .touchUpInside)
         }
     }
@@ -83,41 +83,18 @@ extension MapViewController {
 
         drawRoute(from: fromCoordinate, to: destination)
         addDestinationPin(at: destination)
-
-        let data: [String: Double] = [
-            "lat": destination.latitude, "lng": destination.longitude,
-        ]
-        UserDefaults.standard.setValue(
-            data, forKey: PersistencyKey.savedRouteDestination)
+        viewModel.saveRoute(destination)
     }
 
     private func drawRoute(from source: CLLocationCoordinate2D, to destination: CLLocationCoordinate2D) {
-        let sourcePlacemark = MKPlacemark(coordinate: source)
-        let destinationPlacemark = MKPlacemark(coordinate: destination)
-
-        let directionRequest = MKDirections.Request()
-        directionRequest.source = MKMapItem(placemark: sourcePlacemark)
-        directionRequest.destination = MKMapItem(
-            placemark: destinationPlacemark)
-        directionRequest.transportType = .automobile
-
-        let directions = MKDirections(request: directionRequest)
-        directions.calculate { [weak self] response, error in
-            guard let route = response?.routes.first, let self = self else {
-                print(
-                    "The route could not be drawn:",
-                    error?.localizedDescription ?? "")
-                return
-            }
+        viewModel.calculateRoute(from: source, to: destination) { [weak self] route in
+            guard let self = self, let route = route else { return }
 
             self.mapView.removeOverlays(self.mapView.overlays)
             self.mapView.addOverlay(route.polyline)
-
-            self.mapView.setVisibleMapRect(
-                route.polyline.boundingMapRect,
-                edgePadding: UIEdgeInsets(
-                    top: 60, left: 60, bottom: 60, right: 60),
-                animated: true
+            self.mapView.setVisibleMapRect(route.polyline.boundingMapRect,
+                                           edgePadding: UIEdgeInsets(top: 60, left: 60, bottom: 60, right: 60),
+                                           animated: true
             )
         }
     }
@@ -139,26 +116,20 @@ extension MapViewController {
     private func addMarker(at userLocation: UserLocation?) {
         guard let userLocation else { return }
         let annotation = MKPointAnnotation()
-        annotation.coordinate = CLLocationCoordinate2D(
-            latitude: userLocation.latitude,
-            longitude: userLocation.longitude)
-
+        annotation.coordinate = CLLocationCoordinate2D(latitude: userLocation.latitude,longitude: userLocation.longitude)
         mapView.addAnnotation(annotation)
     }
 
     private func zoomMap(annotation: MKPointAnnotation) {
-        let region = MKCoordinateRegion(
-            center: annotation.coordinate,
-            latitudinalMeters: 900,
-            longitudinalMeters: 900)
+        let region = MKCoordinateRegion(center: annotation.coordinate,
+                                        latitudinalMeters: 900,
+                                        longitudinalMeters: 900)
         mapView.setRegion(region, animated: true)
     }
 
     private func showAddressAlert(address: String) {
-        let alert = UIAlertController(
-            title: "Address", message: address, preferredStyle: .alert)
-        alert.addAction(
-            UIAlertAction(title: "OK", style: .default, handler: nil))
+        let alert = UIAlertController(title: "Address", message: address, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
         present(alert, animated: true, completion: nil)
     }
 }
@@ -172,9 +143,7 @@ extension MapViewController {
         }
 
         let annotation = MKPointAnnotation()
-        annotation.coordinate = CLLocationCoordinate2D(
-            latitude: userLocation.latitude,
-            longitude: userLocation.longitude)
+        annotation.coordinate = CLLocationCoordinate2D(latitude: userLocation.latitude,longitude: userLocation.longitude)
 
         zoomMap(annotation: annotation)
 
@@ -183,16 +152,9 @@ extension MapViewController {
         }
 
         viewModel.currentUserLocation = userLocation
-
-        if let saved = UserDefaults.standard.dictionary(
-            forKey: PersistencyKey.savedRouteDestination) as? [String: Double],
-            let lat = saved["lat"], let lng = saved["lng"]
-        {
-            let destinationCoordinate = CLLocationCoordinate2D(
-                latitude: lat, longitude: lng)
-
-            saveDestinationAndDrawRoute(
-                from: userLocation, to: destinationCoordinate)
+        
+        if let savedRoute = viewModel.getSavedRoute() {
+            saveDestinationAndDrawRoute(from: userLocation, to: savedRoute)
         }
     }
 
@@ -210,8 +172,8 @@ extension MapViewController {
         locationPermission.setTitleColor(titleColor, for: .normal)
     }
 
-    @objc func toggleLocationPermission() {
-        viewModel.toggleLocationPermission()
+    @objc func changeLocationPermission() {
+        viewModel.changeLocationPermission()
     }
 
     @objc func clearRoute() {
@@ -220,13 +182,11 @@ extension MapViewController {
             mapView.removeAnnotation(oldPin)
             viewModel.destinationPin = nil
         }
-        UserDefaults.standard.removeObject(
-            forKey: PersistencyKey.savedRouteDestination)
+        
+        AppStorageManager.shared.remove(forKey: PersistencyKey.savedRoute)
     }
 
-    @objc func handleLongPress(
-        _ gestureRecognizer: UILongPressGestureRecognizer
-    ) {
+    @objc func handleLongPress(_ gestureRecognizer: UILongPressGestureRecognizer) {
         if gestureRecognizer.state == .began {
             let locationInView = gestureRecognizer.location(in: mapView)
             let coordinate = mapView.convert(
@@ -259,9 +219,7 @@ extension MapViewController {
 // MARK: - MKMapViewDelegate
 
 extension MapViewController: MKMapViewDelegate {
-    func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay)
-        -> MKOverlayRenderer
-    {
+    func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer{
         if let polyline = overlay as? MKPolyline {
             let renderer = MKPolylineRenderer(overlay: polyline)
             renderer.strokeColor = .systemBlue
@@ -271,9 +229,7 @@ extension MapViewController: MKMapViewDelegate {
         return MKOverlayRenderer()
     }
 
-    func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation)
-        -> MKAnnotationView?
-    {
+    func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
         if annotation is MKUserLocation {
             return nil
         }

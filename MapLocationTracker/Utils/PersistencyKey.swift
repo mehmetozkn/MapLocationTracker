@@ -6,5 +6,5 @@
 //
 
 enum PersistencyKey {
-    static let savedRouteDestination = "savedRouteDestination"
+    static let savedRoute = "savedRouteDestination"
 }
