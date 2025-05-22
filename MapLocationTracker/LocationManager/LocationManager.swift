@@ -8,10 +8,9 @@
 import CoreLocation
 import Foundation
 import MapKit
+import Combine
 
 protocol LocationServiceProtocol: CLLocationManagerDelegate {
-    var currentStatus: PermissionStatus { get }
-
     func start(desiredAccuracy: CLLocationAccuracy)
     func stop()
     func changeLocationPermission()
@@ -19,7 +18,9 @@ protocol LocationServiceProtocol: CLLocationManagerDelegate {
 
 final class LocationManager: NSObject, LocationServiceProtocol {
     private let locationManager = CLLocationManager()
-    var currentStatus: PermissionStatus = .denied
+    
+    @Published var currentStatus: PermissionStatus = .denied
+    @Published var userLocation: LocationModel?
 
     override init() {
         super.init()
@@ -44,12 +45,9 @@ final class LocationManager: NSObject, LocationServiceProtocol {
 
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         guard let location = locations.last else { return }
-        let userLocation = UserLocation(
-            latitude: location.coordinate.latitude,
-            longitude: location.coordinate.longitude)
+        let userLocation = LocationModel(from: location.coordinate)
+        self.userLocation = userLocation
         print("📍 Location updated: \(location.coordinate.latitude), \(location.coordinate.longitude)")
-
-        NotificationCenter.default.post(name: .userLocation, object: userLocation)
     }
 
     private func requestLocationPermission() {
@@ -72,8 +70,6 @@ final class LocationManager: NSObject, LocationServiceProtocol {
         default:
             self.currentStatus = .denied
         }
-        
-        NotificationCenter.default.post(name: .locationStatus, object: currentStatus)
     }
 
     func changeLocationPermission() {

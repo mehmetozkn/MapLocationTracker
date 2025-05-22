@@ -9,13 +9,26 @@ import CoreLocation
 import Foundation
 import MapKit
 
-final class MapViewModel {
-    private let locationManager: LocationServiceProtocol
+final class MapViewModel: ObservableObject {
+    private let locationManager: LocationManager
     var destinationPin: MKPointAnnotation?
-    var currentUserLocation: UserLocation?
+
+    @Published var currentStatus: PermissionStatus = .denied
+    @Published var userLocation: LocationModel?
     
-    init(locationManager: LocationServiceProtocol = LocationManager()) {
+    init(locationManager: LocationManager = LocationManager()) {
         self.locationManager = locationManager
+        bind()
+    }
+    
+    private func bind() {
+        locationManager.$currentStatus
+            .receive(on: RunLoop.main)
+            .assign(to: &$currentStatus)
+        
+        locationManager.$userLocation
+            .receive(on: RunLoop.main)
+            .assign(to: &$userLocation)
     }
 
     func startTrackingLocation() {
@@ -31,8 +44,8 @@ final class MapViewModel {
     }
     
     func saveRoute(_ coordinate: CLLocationCoordinate2D) {
-        let data: [String: Double] = ["lat": coordinate.latitude, "lng": coordinate.longitude]
-        AppStorageManager.shared.save(data: data, forKey: PersistencyKey.savedRoute)
+        let location = LocationModel(from: coordinate)
+        AppStorageManager.shared.save(location, forKey: PersistencyKey.savedRoute)
     }
     
     func calculateRoute(from source: CLLocationCoordinate2D,
@@ -58,15 +71,13 @@ final class MapViewModel {
     }
     
     func getSavedRoute() -> CLLocationCoordinate2D? {
-        guard let saved = AppStorageManager.shared.get(forKey: PersistencyKey.savedRoute) as? [String: Double],
-              let lat = saved["lat"],
-              let lng = saved["lng"] else {
+        guard let location: LocationModel = AppStorageManager.shared.get(forKey: PersistencyKey.savedRoute, as: LocationModel.self) else {
             return nil
         }
-        return CLLocationCoordinate2D(latitude: lat, longitude: lng)
+        return location.asCLLocationCoordinate2D
     }
     
-    func showNewRoute(at coordinate: CLLocationCoordinate2D, userLocation: UserLocation?, completion: @escaping (MKRoute?) -> Void) {
+    func showNewRoute(at coordinate: CLLocationCoordinate2D, userLocation: LocationModel?, completion: @escaping (MKRoute?) -> Void) {
         guard let userLoc = userLocation else { return }
         calculateRoute(from: CLLocationCoordinate2D(latitude: userLoc.latitude, longitude: userLoc.longitude), to: coordinate) { route in
             if route != nil {
