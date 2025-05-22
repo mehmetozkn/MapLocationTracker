@@ -13,6 +13,7 @@ final class MapViewModel: ObservableObject {
     private let locationManager: LocationManager
     var destinationPin: MKPointAnnotation?
 
+    @Published var markers: [LocationModel] = []
     @Published var currentStatus: PermissionStatus = .denied
     @Published var userLocation: LocationModel?
     
@@ -43,11 +44,6 @@ final class MapViewModel: ObservableObject {
         locationManager.changeLocationPermission()
     }
     
-    func saveRoute(_ coordinate: CLLocationCoordinate2D) {
-        let location = LocationModel(from: coordinate)
-        AppStorageManager.shared.save(location, forKey: PersistencyKey.savedRoute)
-    }
-    
     func calculateRoute(from source: CLLocationCoordinate2D,
                         to destination: CLLocationCoordinate2D,
                         completion: @escaping (MKRoute?) -> Void) {
@@ -70,13 +66,6 @@ final class MapViewModel: ObservableObject {
         }
     }
     
-    func getSavedRoute() -> CLLocationCoordinate2D? {
-        guard let location: LocationModel = AppStorageManager.shared.get(forKey: PersistencyKey.savedRoute, as: LocationModel.self) else {
-            return nil
-        }
-        return location.asCLLocationCoordinate2D
-    }
-    
     func showNewRoute(at coordinate: CLLocationCoordinate2D, userLocation: LocationModel?, completion: @escaping (MKRoute?) -> Void) {
         guard let userLoc = userLocation else { return }
         calculateRoute(from: CLLocationCoordinate2D(latitude: userLoc.latitude, longitude: userLoc.longitude), to: coordinate) { route in
@@ -87,8 +76,33 @@ final class MapViewModel: ObservableObject {
         }
     }
     
+    func addMarkerToSave(at userLocation: LocationModel?) {
+        guard let userLocation = userLocation else { return }
+        markers.append(userLocation)
+        saveMarkers(markers)
+    }
+        
+    func saveRoute(_ coordinate: CLLocationCoordinate2D) {
+        let location = LocationModel(from: coordinate)
+        AppStorageManager.shared.save(location, key: PersistencyKey.savedRoute)
+    }
+    
     func clearSavedRoute() {
         AppStorageManager.shared.remove(forKey: PersistencyKey.savedRoute)
         destinationPin = nil
+    }
+    
+    func getSavedRoute() -> CLLocationCoordinate2D? {
+        guard let location = AppStorageManager.shared.get(key: PersistencyKey.savedRoute, as: LocationModel.self) else { return nil }
+        return location.asCLLocationCoordinate2D
+    }
+    
+    func saveMarkers(_ markers: [LocationModel]) {
+        AppStorageManager.shared.save(markers, key: PersistencyKey.savedMarkers)
+    }
+
+    func getSavedMarkers() -> [LocationModel]? {
+        guard let markers = AppStorageManager.shared.get(key: PersistencyKey.savedMarkers, as: [LocationModel].self) else { return nil }
+        return markers
     }
 }

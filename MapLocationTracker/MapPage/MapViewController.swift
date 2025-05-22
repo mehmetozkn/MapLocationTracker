@@ -37,6 +37,7 @@ final class MapViewController: UIViewController {
         super.viewDidLoad()
         setupUI()
         viewModel.startTrackingLocation()
+        loadSavedMarkers()
         bindViewModel()
     }
 
@@ -86,6 +87,15 @@ final class MapViewController: UIViewController {
         let titleColor: UIColor = status == .authorized ? .systemGreen : .systemRed
         locationPermission.setTitleColor(titleColor, for: .normal)
     }
+    
+    private func loadSavedMarkers() {
+        guard let savedMarkers = viewModel.getSavedMarkers() else { return }
+        for marker in savedMarkers {
+            let annotation = MKPointAnnotation()
+            annotation.coordinate = CLLocationCoordinate2D(latitude: marker.latitude, longitude: marker.longitude)
+            mapView.addAnnotation(annotation)
+        }
+    }
 }
 
 // MARK: - Map Operations
@@ -131,6 +141,7 @@ extension MapViewController {
         let annotation = MKPointAnnotation()
         annotation.coordinate = CLLocationCoordinate2D(latitude: userLocation.latitude,longitude: userLocation.longitude)
         mapView.addAnnotation(annotation)
+        viewModel.addMarkerToSave(at: userLocation)
     }
 
     private func zoomMap(annotation: MKPointAnnotation) {
