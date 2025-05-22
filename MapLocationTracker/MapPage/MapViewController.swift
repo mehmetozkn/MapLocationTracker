@@ -35,6 +35,7 @@ final class MapViewController: UIViewController {
         setupUI()
         viewModel.startTrackingLocation()
         bind()
+        loadSavedMarkers()
     }
 
     deinit {
@@ -83,6 +84,15 @@ final class MapViewController: UIViewController {
             })
             .disposed(by: viewModel.disposeBag)
     }
+    
+    private func loadSavedMarkers() {
+        guard let savedMarkers = viewModel.getSavedMarkers() else { return }
+        for marker in savedMarkers {
+            let annotation = MKPointAnnotation()
+            annotation.coordinate = CLLocationCoordinate2D(latitude: marker.latitude, longitude: marker.longitude)
+            mapView.addAnnotation(annotation)
+        }
+    }
 }
 
 // MARK: - Map Operations
@@ -128,6 +138,7 @@ extension MapViewController {
         let annotation = MKPointAnnotation()
         annotation.coordinate = CLLocationCoordinate2D(latitude: userLocation.latitude,longitude: userLocation.longitude)
         mapView.addAnnotation(annotation)
+        viewModel.addMarkerToSave(at: userLocation)
     }
 
     private func zoomMap(annotation: MKPointAnnotation) {
@@ -158,6 +169,8 @@ extension MapViewController {
             mapView.removeAnnotation(oldPin)
         }
         viewModel.clearSavedRoute()
+        let annotations = mapView.annotations.filter { !($0 is MKUserLocation) }
+        mapView.removeAnnotations(annotations)
     }
 
     @objc func handleLongPress(_ gestureRecognizer: UILongPressGestureRecognizer) {
