@@ -89,6 +89,7 @@ final class MapViewModel: ObservableObject {
     
     func clearSavedRoute() {
         AppStorageManager.shared.remove(forKey: PersistencyKey.savedRoute)
+        AppStorageManager.shared.remove(forKey: PersistencyKey.savedMarkers)
         destinationPin = nil
     }
     
