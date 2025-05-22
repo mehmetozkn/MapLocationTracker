@@ -91,6 +91,7 @@ extension MapViewModel {
         AppStorageManager.shared.remove(forKey: PersistencyKey.savedRoute)
         AppStorageManager.shared.remove(forKey: PersistencyKey.savedMarkers)
         destinationPin = nil
+        markers = []
     }
     
     func getSavedRoute() -> CLLocationCoordinate2D? {

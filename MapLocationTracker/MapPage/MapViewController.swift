@@ -187,6 +187,8 @@ extension MapViewController {
             mapView.removeAnnotation(oldPin)
         }
         viewModel.clearSavedRoute()
+        let annotations = mapView.annotations.filter { !($0 is MKUserLocation) }
+        mapView.removeAnnotations(annotations)
     }
 
     @objc func handleLongPress(_ gestureRecognizer: UILongPressGestureRecognizer) {
