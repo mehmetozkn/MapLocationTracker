@@ -12,8 +12,8 @@ import MapKit
 final class MapViewModel: ObservableObject {
     private let locationManager: LocationManager
     var destinationPin: MKPointAnnotation?
-
-    @Published var markers: [LocationModel] = []
+    var markers: [LocationModel] = []
+    
     @Published var currentStatus: PermissionStatus = .denied
     @Published var userLocation: LocationModel?
     
@@ -91,6 +91,7 @@ final class MapViewModel: ObservableObject {
         AppStorageManager.shared.remove(forKey: PersistencyKey.savedRoute)
         AppStorageManager.shared.remove(forKey: PersistencyKey.savedMarkers)
         destinationPin = nil
+        markers = []
     }
     
     func getSavedRoute() -> CLLocationCoordinate2D? {
