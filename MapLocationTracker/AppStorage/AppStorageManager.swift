@@ -9,18 +9,24 @@ import Foundation
 
 final class AppStorageManager {
     static let shared = AppStorageManager()
-    
+    private let defaults = UserDefaults.standard
     private init() {}
 
-    func save(data: Any, forKey key: String) {
-        UserDefaults.standard.set(data, forKey: key)
+    func saveCodable<T: Codable>(_ value: T, forKey key: String) {
+        if let data = try? JSONEncoder().encode(value) {
+            defaults.set(data, forKey: key)
+        }
     }
 
-    func get(forKey key: String) -> Any? {
-        return UserDefaults.standard.object(forKey: key)
+    func getCodable<T: Codable>(forKey key: String, as type: T.Type) -> T? {
+        guard let data = defaults.data(forKey: key),
+              let decoded = try? JSONDecoder().decode(T.self, from: data) else {
+            return nil
+        }
+        return decoded
     }
 
     func remove(forKey key: String) {
-        UserDefaults.standard.removeObject(forKey: key)
+        defaults.removeObject(forKey: key)
     }
 }

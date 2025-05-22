@@ -6,6 +6,11 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		8539D8192DDE658800FFBE35 /* RxRelay in Frameworks */ = {isa = PBXBuildFile; productRef = 8539D8182DDE658800FFBE35 /* RxRelay */; };
+		8539D81B2DDE658800FFBE35 /* RxSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 8539D81A2DDE658800FFBE35 /* RxSwift */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		85668ADA2DD22DDB00EC79B6 /* MapLocationTracker.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MapLocationTracker.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -36,6 +41,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8539D81B2DDE658800FFBE35 /* RxSwift in Frameworks */,
+				8539D8192DDE658800FFBE35 /* RxRelay in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -78,6 +85,8 @@
 			);
 			name = MapLocationTracker;
 			packageProductDependencies = (
+				8539D8182DDE658800FFBE35 /* RxRelay */,
+				8539D81A2DDE658800FFBE35 /* RxSwift */,
 			);
 			productName = MapLocationTracker;
 			productReference = 85668ADA2DD22DDB00EC79B6 /* MapLocationTracker.app */;
@@ -107,6 +116,9 @@
 			);
 			mainGroup = 85668AD12DD22DDB00EC79B6;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				8539D8172DDE658800FFBE35 /* XCRemoteSwiftPackageReference "RxSwift" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 85668ADB2DD22DDB00EC79B6 /* Products */;
 			projectDirPath = "";
@@ -343,6 +355,30 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		8539D8172DDE658800FFBE35 /* XCRemoteSwiftPackageReference "RxSwift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/ReactiveX/RxSwift.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 6.9.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		8539D8182DDE658800FFBE35 /* RxRelay */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8539D8172DDE658800FFBE35 /* XCRemoteSwiftPackageReference "RxSwift" */;
+			productName = RxRelay;
+		};
+		8539D81A2DDE658800FFBE35 /* RxSwift */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8539D8172DDE658800FFBE35 /* XCRemoteSwiftPackageReference "RxSwift" */;
+			productName = RxSwift;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 85668AD22DD22DDB00EC79B6 /* Project object */;
 }

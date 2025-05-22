@@ -13,8 +13,7 @@ final class MapViewController: UIViewController {
 
     @IBOutlet weak var mapView: MKMapView! {
         didSet {
-            let longPressGesture = UILongPressGestureRecognizer(
-                target: self, action: #selector(handleLongPress(_:)))
+            let longPressGesture = UILongPressGestureRecognizer(target: self, action: #selector(handleLongPress(_:)))
             mapView.addGestureRecognizer(longPressGesture)
         }
     }
@@ -34,39 +33,55 @@ final class MapViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
-        setupNotifications()
         viewModel.startTrackingLocation()
+        bind()
     }
 
     deinit {
         cleanUp()
     }
 
-    private func setupNotifications() {
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(didUpdateUserLocation(_:)),
-            name: .userLocation,
-            object: nil)
-
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(didUpdateLocationStatus(_:)),
-            name: .locationStatus,
-            object: nil)
-    }
-
     private func cleanUp() {
         viewModel.stopTrackingLocation()
-        NotificationCenter.default.removeObserver(
-            self, name: .userLocation, object: nil)
-        NotificationCenter.default.removeObserver(
-            self, name: .locationStatus, object: nil)
+    
     }
 
     private func setupUI() {
         mapView.delegate = self
         mapView.showsUserLocation = true
+    }
+    
+    private func bind() {
+        viewModel.currentUserLocation
+            .asObservable()
+            .compactMap { $0 }
+            .subscribe(onNext: { [weak self] userLocation in
+                guard let self = self else { return }
+
+                let annotation = MKPointAnnotation()
+                annotation.coordinate = CLLocationCoordinate2D(latitude: userLocation.latitude,
+                                                               longitude: userLocation.longitude)
+                self.zoomMap(annotation: annotation)
+                self.addMarker(at: userLocation)
+
+                if let savedRoute = self.viewModel.getSavedRoute() {
+                    self.saveDestinationAndDrawRoute(from: userLocation, to: savedRoute)
+                }
+            })
+            .disposed(by: viewModel.disposeBag)
+        
+        viewModel.currentStatus
+            .asObservable()
+            .subscribe(onNext: { [weak self] status in
+                guard let self = self else { return }
+
+                let title = status == .authorized ? "Location is on. Click to close." : "Location is off. Click to on."
+                let titleColor: UIColor = status == .authorized ? .systemGreen : .systemRed
+
+                self.locationPermission.setTitle(title, for: .normal)
+                self.locationPermission.setTitleColor(titleColor, for: .normal)
+            })
+            .disposed(by: viewModel.disposeBag)
     }
 }
 
@@ -74,9 +89,7 @@ final class MapViewController: UIViewController {
 
 extension MapViewController {
     private func saveDestinationAndDrawRoute(from userLocation: UserLocation, to destination: CLLocationCoordinate2D) {
-        let fromCoordinate = CLLocationCoordinate2D(
-            latitude: userLocation.latitude,
-            longitude: userLocation.longitude)
+        let fromCoordinate = CLLocationCoordinate2D(latitude: userLocation.latitude,longitude: userLocation.longitude)
 
         drawRoute(from: fromCoordinate, to: destination)
         addDestinationPin(at: destination)
@@ -134,37 +147,6 @@ extension MapViewController {
 // MARK: - Objc Methods
 
 extension MapViewController {
-    @objc func didUpdateUserLocation(_ notification: Notification) {
-        guard let userLocation = notification.object as? UserLocation else {
-            return
-        }
-
-        let annotation = MKPointAnnotation()
-        annotation.coordinate = CLLocationCoordinate2D(latitude: userLocation.latitude,longitude: userLocation.longitude)
-
-        zoomMap(annotation: annotation)
-
-        if let locationMarker = viewModel.currentUserLocation {
-            addMarker(at: locationMarker)
-        }
-
-        viewModel.currentUserLocation = userLocation
-        
-        if let savedRoute = viewModel.getSavedRoute() {
-            saveDestinationAndDrawRoute(from: userLocation, to: savedRoute)
-        }
-    }
-
-    @objc func didUpdateLocationStatus(_ notification: Notification) {
-        guard let status = notification.object as? PermissionStatus else {
-            return
-        }
-        let title = status == .authorized ? "Location is on. Click to close." : "Location is off. Click to on."
-        locationPermission.setTitle(title, for: .normal)
-        let titleColor: UIColor = status == .authorized ? .systemGreen : .systemRed
-        locationPermission.setTitleColor(titleColor, for: .normal)
-    }
-
     @objc func changeLocationPermission() {
         viewModel.changeLocationPermission()
     }
@@ -186,7 +168,7 @@ extension MapViewController {
             let alert = UIAlertController(title: "Route", message: "Plot a route to this location?", preferredStyle: .alert)
             alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
             alert.addAction(UIAlertAction(title: "OK", style: .default, handler: { [weak self] _ in
-                guard let self = self, let userLoc = self.viewModel.currentUserLocation else { return }
+                guard let self = self, let userLoc = self.viewModel.currentUserLocation.value else { return }
                 self.viewModel.showNewRoute(at: coordinate, userLocation: userLoc) { route in
                     DispatchQueue.main.async {
                         if let route = route {

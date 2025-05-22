@@ -8,14 +8,30 @@
 import CoreLocation
 import Foundation
 import MapKit
+import RxSwift
+import RxRelay
 
 final class MapViewModel {
     private let locationManager: LocationServiceProtocol
+    let disposeBag = DisposeBag()
     var destinationPin: MKPointAnnotation?
-    var currentUserLocation: UserLocation?
+    
+    var currentUserLocation = BehaviorRelay<UserLocation?>(value: nil)
+    var currentStatus = BehaviorRelay<PermissionStatus?>(value: nil)
     
     init(locationManager: LocationServiceProtocol = LocationManager()) {
         self.locationManager = locationManager
+        bind()
+    }
+    
+    private func bind() {
+        locationManager.userLocation
+            .bind(to: currentUserLocation)
+            .disposed(by: disposeBag)
+        
+        locationManager.currentStatus
+            .bind(to: currentStatus)
+            .disposed(by: disposeBag)
     }
 
     func startTrackingLocation() {
@@ -31,8 +47,8 @@ final class MapViewModel {
     }
     
     func saveRoute(_ coordinate: CLLocationCoordinate2D) {
-        let data: [String: Double] = ["lat": coordinate.latitude, "lng": coordinate.longitude]
-        AppStorageManager.shared.save(data: data, forKey: PersistencyKey.savedRoute)
+        let location = UserLocation(from: coordinate)
+        AppStorageManager.shared.saveCodable(location, forKey: PersistencyKey.savedRoute)
     }
     
     func calculateRoute(from source: CLLocationCoordinate2D,
@@ -58,12 +74,10 @@ final class MapViewModel {
     }
     
     func getSavedRoute() -> CLLocationCoordinate2D? {
-        guard let saved = AppStorageManager.shared.get(forKey: PersistencyKey.savedRoute) as? [String: Double],
-              let lat = saved["lat"],
-              let lng = saved["lng"] else {
+        guard let location: UserLocation = AppStorageManager.shared.getCodable(forKey: PersistencyKey.savedRoute, as: UserLocation.self) else {
             return nil
         }
-        return CLLocationCoordinate2D(latitude: lat, longitude: lng)
+        return location.asCLLocationCoordinate2D
     }
     
     func showNewRoute(at coordinate: CLLocationCoordinate2D, userLocation: UserLocation?, completion: @escaping (MKRoute?) -> Void) {
@@ -81,3 +95,4 @@ final class MapViewModel {
         destinationPin = nil
     }
 }
+

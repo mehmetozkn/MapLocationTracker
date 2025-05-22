@@ -8,9 +8,12 @@
 import CoreLocation
 import Foundation
 import MapKit
+import RxSwift
+import RxRelay
 
 protocol LocationServiceProtocol: CLLocationManagerDelegate {
-    var currentStatus: PermissionStatus { get }
+    var userLocation: Observable<UserLocation> { get }
+    var currentStatus: Observable<PermissionStatus> { get }
 
     func start(desiredAccuracy: CLLocationAccuracy)
     func stop()
@@ -19,7 +22,17 @@ protocol LocationServiceProtocol: CLLocationManagerDelegate {
 
 final class LocationManager: NSObject, LocationServiceProtocol {
     private let locationManager = CLLocationManager()
-    var currentStatus: PermissionStatus = .denied
+    
+    private let currentStatusRelay = BehaviorRelay<PermissionStatus>(value: .denied)
+    private let userLocationRelay = PublishRelay<UserLocation>()
+    
+    var userLocation: Observable<UserLocation> {
+        return userLocationRelay.asObservable()
+    }
+
+    var currentStatus: Observable<PermissionStatus> {
+        return currentStatusRelay.asObservable()
+    }
 
     override init() {
         super.init()
@@ -44,12 +57,9 @@ final class LocationManager: NSObject, LocationServiceProtocol {
 
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         guard let location = locations.last else { return }
-        let userLocation = UserLocation(
-            latitude: location.coordinate.latitude,
-            longitude: location.coordinate.longitude)
+        let userLocation = UserLocation(from: location.coordinate)
         print("📍 Location updated: \(location.coordinate.latitude), \(location.coordinate.longitude)")
-
-        NotificationCenter.default.post(name: .userLocation, object: userLocation)
+        userLocationRelay.accept(userLocation)
     }
 
     private func requestLocationPermission() {
@@ -64,20 +74,18 @@ final class LocationManager: NSObject, LocationServiceProtocol {
         let status = manager.authorizationStatus
         switch status {
         case .notDetermined:
-            self.currentStatus = .notDetermined
+            currentStatusRelay.accept(.notDetermined)
         case .denied:
-            self.currentStatus = .denied
+            currentStatusRelay.accept(.denied)
         case .authorizedAlways, .authorizedWhenInUse:
-            self.currentStatus = .authorized
+            currentStatusRelay.accept(.authorized)
         default:
-            self.currentStatus = .denied
+            currentStatusRelay.accept(.denied)
         }
-        
-        NotificationCenter.default.post(name: .locationStatus, object: currentStatus)
     }
 
     func changeLocationPermission() {
-        switch currentStatus {
+        switch currentStatusRelay.value {
         case .notDetermined:
             requestLocationPermission()
         default:
