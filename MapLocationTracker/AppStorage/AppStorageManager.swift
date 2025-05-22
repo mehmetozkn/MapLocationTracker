@@ -12,13 +12,13 @@ final class AppStorageManager {
     private let defaults = UserDefaults.standard
     private init() {}
 
-    func save<T: Codable>(_ value: T, forKey key: String) {
+    func save<T: Codable>(_ value: T, key: String) {
         if let data = try? JSONEncoder().encode(value) {
             defaults.set(data, forKey: key)
         }
     }
 
-    func get<T: Codable>(forKey key: String, as type: T.Type) -> T? {
+    func get<T: Codable>(key: String, as type: T.Type) -> T? {
         guard let data = defaults.data(forKey: key),
               let decoded = try? JSONDecoder().decode(T.self, from: data) else {
             return nil

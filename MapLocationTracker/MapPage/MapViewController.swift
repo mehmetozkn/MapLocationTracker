@@ -36,6 +36,7 @@ final class MapViewController: UIViewController {
         setupUI()
         setupNotifications()
         viewModel.startTrackingLocation()
+        loadSavedMarkers()
     }
 
     deinit {
@@ -67,6 +68,15 @@ final class MapViewController: UIViewController {
     private func setupUI() {
         mapView.delegate = self
         mapView.showsUserLocation = true
+    }
+    
+    private func loadSavedMarkers() {
+        guard let savedMarkers = viewModel.getSavedMarkers() else { return }
+        for marker in savedMarkers {
+            let annotation = MKPointAnnotation()
+            annotation.coordinate = CLLocationCoordinate2D(latitude: marker.latitude, longitude: marker.longitude)
+            mapView.addAnnotation(annotation)
+        }
     }
 }
 
@@ -115,6 +125,7 @@ extension MapViewController {
         let annotation = MKPointAnnotation()
         annotation.coordinate = CLLocationCoordinate2D(latitude: userLocation.latitude,longitude: userLocation.longitude)
         mapView.addAnnotation(annotation)
+        viewModel.addMarkerToSave(at: userLocation)
     }
 
     private func zoomMap(annotation: MKPointAnnotation) {
