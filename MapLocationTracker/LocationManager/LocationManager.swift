@@ -44,9 +44,7 @@ final class LocationManager: NSObject, LocationServiceProtocol {
 
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         guard let location = locations.last else { return }
-        let userLocation = UserLocation(
-            latitude: location.coordinate.latitude,
-            longitude: location.coordinate.longitude)
+        let userLocation = LocationModel(from: location.coordinate)
         print("📍 Location updated: \(location.coordinate.latitude), \(location.coordinate.longitude)")
 
         NotificationCenter.default.post(name: .userLocation, object: userLocation)

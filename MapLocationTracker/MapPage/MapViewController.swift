@@ -73,7 +73,7 @@ final class MapViewController: UIViewController {
 // MARK: - Map Operations
 
 extension MapViewController {
-    private func saveDestinationAndDrawRoute(from userLocation: UserLocation, to destination: CLLocationCoordinate2D) {
+    private func saveDestinationAndDrawRoute(from userLocation: LocationModel, to destination: CLLocationCoordinate2D) {
         let fromCoordinate = CLLocationCoordinate2D(
             latitude: userLocation.latitude,
             longitude: userLocation.longitude)
@@ -110,7 +110,7 @@ extension MapViewController {
         viewModel.destinationPin = annotation
     }
 
-    private func addMarker(at userLocation: UserLocation?) {
+    private func addMarker(at userLocation: LocationModel?) {
         guard let userLocation else { return }
         let annotation = MKPointAnnotation()
         annotation.coordinate = CLLocationCoordinate2D(latitude: userLocation.latitude,longitude: userLocation.longitude)
@@ -135,7 +135,7 @@ extension MapViewController {
 
 extension MapViewController {
     @objc func didUpdateUserLocation(_ notification: Notification) {
-        guard let userLocation = notification.object as? UserLocation else {
+        guard let userLocation = notification.object as? LocationModel else {
             return
         }
 
