@@ -1,5 +1,5 @@
 //
-//  UserLocationModel.swift
+//  LocationModel.swift
 //  MapLocationTracker
 //
 //  Created by Mehmet Özkan on 20.05.2025.
@@ -7,7 +7,7 @@
 
 import CoreLocation
 
-struct UserLocation: Codable, Equatable {
+struct LocationModel: Codable, Equatable {
     let latitude: Double
     let longitude: Double
     

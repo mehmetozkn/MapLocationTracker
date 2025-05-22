@@ -16,7 +16,7 @@ final class MapViewModel {
     let disposeBag = DisposeBag()
     var destinationPin: MKPointAnnotation?
     
-    var currentUserLocation = BehaviorRelay<UserLocation?>(value: nil)
+    var currentUserLocation = BehaviorRelay<LocationModel?>(value: nil)
     var currentStatus = BehaviorRelay<PermissionStatus?>(value: nil)
     
     init(locationManager: LocationServiceProtocol = LocationManager()) {
@@ -47,8 +47,8 @@ final class MapViewModel {
     }
     
     func saveRoute(_ coordinate: CLLocationCoordinate2D) {
-        let location = UserLocation(from: coordinate)
-        AppStorageManager.shared.saveCodable(location, forKey: PersistencyKey.savedRoute)
+        let location = LocationModel(from: coordinate)
+        AppStorageManager.shared.save(location, forKey: PersistencyKey.savedRoute)
     }
     
     func calculateRoute(from source: CLLocationCoordinate2D,
@@ -74,13 +74,13 @@ final class MapViewModel {
     }
     
     func getSavedRoute() -> CLLocationCoordinate2D? {
-        guard let location: UserLocation = AppStorageManager.shared.getCodable(forKey: PersistencyKey.savedRoute, as: UserLocation.self) else {
+        guard let location: LocationModel = AppStorageManager.shared.get(forKey: PersistencyKey.savedRoute, as: LocationModel.self) else {
             return nil
         }
         return location.asCLLocationCoordinate2D
     }
     
-    func showNewRoute(at coordinate: CLLocationCoordinate2D, userLocation: UserLocation?, completion: @escaping (MKRoute?) -> Void) {
+    func showNewRoute(at coordinate: CLLocationCoordinate2D, userLocation: LocationModel?, completion: @escaping (MKRoute?) -> Void) {
         guard let userLoc = userLocation else { return }
         calculateRoute(from: CLLocationCoordinate2D(latitude: userLoc.latitude, longitude: userLoc.longitude), to: coordinate) { route in
             if route != nil {

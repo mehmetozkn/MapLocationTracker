@@ -12,7 +12,7 @@ import RxSwift
 import RxRelay
 
 protocol LocationServiceProtocol: CLLocationManagerDelegate {
-    var userLocation: Observable<UserLocation> { get }
+    var userLocation: Observable<LocationModel> { get }
     var currentStatus: Observable<PermissionStatus> { get }
 
     func start(desiredAccuracy: CLLocationAccuracy)
@@ -24,9 +24,9 @@ final class LocationManager: NSObject, LocationServiceProtocol {
     private let locationManager = CLLocationManager()
     
     private let currentStatusRelay = BehaviorRelay<PermissionStatus>(value: .denied)
-    private let userLocationRelay = PublishRelay<UserLocation>()
+    private let userLocationRelay = PublishRelay<LocationModel>()
     
-    var userLocation: Observable<UserLocation> {
+    var userLocation: Observable<LocationModel> {
         return userLocationRelay.asObservable()
     }
 
@@ -57,7 +57,7 @@ final class LocationManager: NSObject, LocationServiceProtocol {
 
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         guard let location = locations.last else { return }
-        let userLocation = UserLocation(from: location.coordinate)
+        let userLocation = LocationModel(from: location.coordinate)
         print("📍 Location updated: \(location.coordinate.latitude), \(location.coordinate.longitude)")
         userLocationRelay.accept(userLocation)
     }
